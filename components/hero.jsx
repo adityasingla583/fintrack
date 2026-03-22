@@ -8,27 +8,35 @@ import { useEffect, useRef } from "react"
 const HeroSection = () => {
   const imageRef = useRef(null)
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const imageElement = imageRef.current
-      if (!imageElement) return
+ useEffect(() => {
+  let ticking = false
 
-      const scrollPosition = window.scrollY
-      const scrollThreshold = 100
+  const handleScroll = () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const imageElement = imageRef.current
+        if (!imageElement) return
 
-      if (scrollPosition > scrollThreshold) {
-        imageElement.classList.add("scrolled")
-      } else {
-        imageElement.classList.remove("scrolled")
-      }
+        const scrollPosition = window.scrollY
+        const scrollThreshold = 100
+
+        if (scrollPosition > scrollThreshold) {
+          imageElement.classList.add("scrolled")
+        } else {
+          imageElement.classList.remove("scrolled")
+        }
+
+        ticking = false
+      })
+
+      ticking = true
     }
+  }
 
-    window.addEventListener("scroll", handleScroll)
+  window.addEventListener("scroll", handleScroll)
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
+  return () => window.removeEventListener("scroll", handleScroll)
+}, [])
 
   return (
     <div className="pb-20 px-4">
