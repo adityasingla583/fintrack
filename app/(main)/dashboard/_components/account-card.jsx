@@ -3,12 +3,15 @@ import { updateDefaultAccount } from '@/actions/accounts';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch';
 import useFetch from '@/hooks/use-fetch';
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from "react"
 import React, { useEffect } from 'react'
 import { toast } from 'sonner';
+import DeleteAccountModal from './delete-otp';
 
 const AccountCard = ({ account}) => {
+    const [openDeleteModal, setOpenDeleteModal] = useState(false)
     const {name, type, balance, id, isDefault} = account;
     const {
         loading: updateDefaultLoading,
@@ -26,19 +29,17 @@ const AccountCard = ({ account}) => {
         }
         await updateDefaultFn(id);
     }
-
     useEffect(() => {
       if(updatedAccount?.success) {
         toast.success("Default account updated successfully");
       }
-    }, [updatedAccount, updateDefaultLoading])
+    }, [updatedAccount, updateDefaultLoading])    
 
     useEffect(() => {
       if(error) {
         toast.error(error.message || "Failed to update default account");
       }
-    }, [error])
-    
+    }, [error])    
 
   return (
     <Card className="hover:shadow-md transition-shadow group relative">
@@ -55,17 +56,35 @@ const AccountCard = ({ account}) => {
                     {type.charAt(0) + type.slice(1).toLowerCase()} Account
                 </p>
             </CardContent>
+                </Link>
             <CardFooter className="flex justify-between text-sm text-muted-foreground">
                 <div className='flex items-center'>
                     <ArrowUpRight className='mr-1 h-4 w-4 text-green-500' />
                     Income
                 </div>
+
                 <div className='flex items-center'>
                     <ArrowDownRight className='mr-1 h-4 w-4 text-red-500' />
                     Expense
                 </div>
+
+                {!isDefault && (
+                    <>
+                        <button
+                            onClick={() => setOpenDeleteModal(true)}
+                            className="text-red-500 hover:text-red-700"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+
+                        <DeleteAccountModal
+                            open={openDeleteModal}
+                            setOpen={setOpenDeleteModal}
+                            accountId={id}
+                        />
+                    </>
+                )}
             </CardFooter>
-        </Link>
     </Card>
   )
 }

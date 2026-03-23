@@ -19,9 +19,14 @@ const COLORS = [
 ];
 
 const DashboardOverview = ({ accounts, transactions }) => {
-    const [selectedAccountId, setSelectedAccountId] = useState(
-        accounts.find((a) => a.isDefault)?.id || accounts[0]?.id || null
-    );
+    const [selectedAccountId, setSelectedAccountId] = useState(() => {
+  if (!accounts?.length) return undefined
+
+  const defaultAcc =
+    accounts.find(acc => acc.isDefault) || accounts[0]
+
+  return defaultAcc.id
+})
 
     const accountTransactions = transactions.filter(
         (t) => t.accountId === selectedAccountId
@@ -74,8 +79,14 @@ const DashboardOverview = ({ accounts, transactions }) => {
             onValueChange={setSelectedAccountId}
           >
             <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select account" />
+              <SelectValue>
+                {
+                  accounts.find(a => a.id === selectedAccountId)?.name
+                  || "Select account"
+                }
+              </SelectValue>
             </SelectTrigger>
+
             <SelectContent>
               {accounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>

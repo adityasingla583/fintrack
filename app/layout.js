@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
           <footer className="bg-blue-50 py-12">
             <div className="container mx-auto px-4 text-center text-gray-600">
               <p className="text-black font-bold ">
-                © FinTrack | All Rights Reserved | 2026
+                © FinTrack | All Rights Reserved | {new Date().getFullYear()}
               </p>
             </div>
           </footer>
