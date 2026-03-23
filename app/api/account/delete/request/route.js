@@ -23,8 +23,6 @@ export async function POST(req) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString()
-  console.log("OTP is : ", otp);
-  console.log("email is : ", user.email);
 
   const otpHash = crypto.createHash("sha256").update(otp).digest("hex")
 
@@ -55,8 +53,6 @@ export async function POST(req) {
     subject: "OTP Verification",
     html
   })
-
-  console.log("Email sent : ", data);
 
   return NextResponse.json({ message: "OTP sent" })
 }
