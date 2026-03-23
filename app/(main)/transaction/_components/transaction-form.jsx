@@ -44,7 +44,7 @@ const AddTransactionForm = ({ accounts, categories, editMode = false, initialDat
       accountId: initialData.accountId,
       date: initialData.date,
       isRecurring: initialData.isRecurring,
-      ...AddTransactionForm(initialData.recurringInterval && { recurringInterval: initialData.recurringInterval })
+      ...(initialData.recurringInterval && {recurringInterval: initialData.recurringInterval})
     } : {
       type: "EXPENSE",
       amount: "",
@@ -181,19 +181,20 @@ const AddTransactionForm = ({ accounts, categories, editMode = false, initialDat
             onValueChange={(value) => setValue("accountId", value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select account" />
+              <SelectValue>
+                {
+                  accounts.find(acc => acc.id === accountValue)?.name
+                  || "Select account"
+                }
+              </SelectValue>
             </SelectTrigger>
+
             <SelectContent>
               {accounts.map(account => (
                 <SelectItem key={account.id} value={account.id}>
-                  {account.name} (${parseFloat(account.balance).toFixed(2)})
+                  {account.name}
                 </SelectItem>
               ))}
-              <CreateAccountDrawer>
-                <Button variant="ghost" className="w-full justify-start">
-                  Create Account
-                </Button>
-              </CreateAccountDrawer>
             </SelectContent>
           </Select>
           {errors.accountId && <p className="text-sm text-red-500">{errors.accountId.message}</p>}
