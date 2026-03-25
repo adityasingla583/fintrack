@@ -11,6 +11,7 @@ import AccountCard from "./_components/account-card";
 import { getCurrentBudget } from "@/actions/budget";
 import { de } from "date-fns/locale";
 import DashboardOverview from "./_components/transaction-overview";
+import { getAccountBudgetStats } from "@/actions/accounts";
 // import { DashboardOverview } from "./_components/transaction-overview";
 
 export default async function DashboardPage() {
@@ -28,14 +29,17 @@ export default async function DashboardPage() {
   }
 
   const transactions = await getDashboardData(defaultAccount?.id);
+  const stats = await getAccountBudgetStats(defaultAccount?.id);
 
   return (
     <div className="space-y-8">
       {/* Budget Progress */}
       {defaultAccount && (
         <BudgetProgress
-        initialBudget={budgetData?.budget}
-        currentExpenses={budgetData?.currentExpenses || 0}
+        accountId={defaultAccount.id}
+        budget={budgetData?.remainingBudget || 0}
+        monthlySpend={stats?.monthlySpend || 0}
+        yearlySpend={stats?.yearlySpend || 0}
       />
       )}
 

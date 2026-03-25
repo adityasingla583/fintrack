@@ -9,8 +9,8 @@ import { revalidatePath } from "next/cache";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 const serializeAmount = (obj) => ({
-    ...obj,
-    amount: obj.amount.toNumber(),
+  ...obj,
+  amount: obj.amount.toNumber(),
 });
 
 export async function createTransaction(data) {
@@ -57,6 +57,7 @@ export async function createTransaction(data) {
 
     /* ---------------- DB TRANSACTION ---------------- */
     const transaction = await db.$transaction(async (tx) => {
+
       const created = await tx.transaction.create({
         data: {
           ...data,
@@ -64,20 +65,31 @@ export async function createTransaction(data) {
           nextRecurringDate:
             data.isRecurring && data.recurringInterval
               ? calculateNextRecurringDate(
-                  data.date,
-                  data.recurringInterval
-                )
+                data.date,
+                data.recurringInterval
+              )
               : null,
         },
       });
 
-      /* ⭐ ATOMIC BALANCE UPDATE (VERY IMPORTANT) */
+      /* ⭐ ACCOUNT BALANCE UPDATE */
       await tx.account.update({
         where: { id: data.accountId },
         data: {
           balance: {
             increment: balanceChange,
           },
+        },
+      });
+
+      /* ⭐ BUDGET UPDATE */
+      await tx.budget.update({
+        where: { accountId: data.accountId },
+        data: {
+          amount:
+            data.type === "EXPENSE"
+              ? { decrement: data.amount }
+              : { increment: data.amount }
         },
       });
 
@@ -161,7 +173,7 @@ export async function scanReceipt(file) {
     console.error("Error scanning receipt:", error);
     throw new Error("Failed to scan receipt");
   }
-}  
+}
 
 
 // Helper function to calculate next recurring date
@@ -245,6 +257,29 @@ export async function updateTransaction(id, data) {
 
     // Update transaction and account balance in a transaction
     const transaction = await db.$transaction(async (tx) => {
+
+      /* ⭐ REVERSE OLD ACCOUNT BALANCE */
+      await tx.account.update({
+        where: { id: originalTransaction.accountId },
+        data: {
+          balance: {
+            increment: -oldBalanceChange,
+          },
+        },
+      });
+
+      /* ⭐ REVERSE OLD BUDGET EFFECT */
+      await tx.budget.update({
+        where: { accountId: originalTransaction.accountId },
+        data: {
+          amount:
+            originalTransaction.type === "EXPENSE"
+              ? { increment: originalTransaction.amount }
+              : { decrement: originalTransaction.amount }
+        },
+      });
+
+      /* ⭐ UPDATE TRANSACTION */
       const updated = await tx.transaction.update({
         where: {
           id,
@@ -259,13 +294,24 @@ export async function updateTransaction(id, data) {
         },
       });
 
-      // Update account balance
+      /* ⭐ APPLY NEW ACCOUNT BALANCE */
       await tx.account.update({
         where: { id: data.accountId },
         data: {
           balance: {
-            increment: netBalanceChange,
+            increment: newBalanceChange,
           },
+        },
+      });
+
+      /* ⭐ APPLY NEW BUDGET EFFECT */
+      await tx.budget.update({
+        where: { accountId: data.accountId },
+        data: {
+          amount:
+            data.type === "EXPENSE"
+              ? { decrement: data.amount }
+              : { increment: data.amount }
         },
       });
 

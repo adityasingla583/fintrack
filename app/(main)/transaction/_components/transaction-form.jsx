@@ -64,7 +64,7 @@ const AddTransactionForm = ({ accounts, categories, editMode = false, initialDat
   const type = watch("type")
   const isRecurring = watch("isRecurring")
   const date = watch("date")
-  const categoryValue = watch("category")
+  const categoryValue = watch("category") || ""
   const accountValue = watch("accountId")
   const recurringIntervalValue = watch("recurringInterval")
 
@@ -74,7 +74,7 @@ const AddTransactionForm = ({ accounts, categories, editMode = false, initialDat
 
   // clear category when type changes
   useEffect(() => {
-    setValue("category", undefined)
+    setValue("category", "")
   }, [type, setValue])
 
   useEffect(() => {
@@ -206,7 +206,7 @@ const AddTransactionForm = ({ accounts, categories, editMode = false, initialDat
       <div className="space-y-2">
         <label className="text-sm font-medium">Category</label>
         <Select
-          value={categoryValue}
+          value={categoryValue || ""}
           onValueChange={(value) => setValue("category", value)}
         >
           <SelectTrigger>

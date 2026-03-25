@@ -57,13 +57,27 @@ export async function createAccount(data) {
       });
     }
 
-    const account = await db.account.create({
-      data: {
-        ...data,
-        balance: balanceFloat,
-        userId: user.id,
-        isDefault: shouldBeDefault,
-      },
+    const account = await db.$transaction(async (tx) => {
+
+      const createdAccount = await tx.account.create({
+        data: {
+          ...data,
+          balance: balanceFloat,
+          userId: user.id,
+          isDefault: shouldBeDefault,
+        },
+      });
+
+      // ⭐ AUTO CREATE BUDGET FOR THIS ACCOUNT
+      await tx.budget.create({
+        data: {
+          amount: balanceFloat,
+          accountId: createdAccount.id,
+        },
+      });
+
+      return createdAccount;
+
     });
 
     revalidatePath("/dashboard");

@@ -150,7 +150,21 @@ export async function bulkDeleteTransactions(transactionIds) {
       return acc;
     }, {});
 
+    const budgetChanges = transactions.reduce((acc, tx) => {
+      const amount = tx.amount.toNumber();
+
+      const change =
+        tx.type === "EXPENSE"
+          ? amount      // deleting expense → budget increment
+          : -amount;    // deleting income → budget decrement
+
+      acc[tx.accountId] = (acc[tx.accountId] || 0) + change;
+
+      return acc;
+    }, {});
+
     await db.$transaction(async (trx) => {
+
       await trx.transaction.deleteMany({
         where: {
           id: { in: transactionIds },
@@ -158,6 +172,7 @@ export async function bulkDeleteTransactions(transactionIds) {
         },
       });
 
+      /* ⭐ ACCOUNT BALANCE UPDATE */
       for (const [accountId, balanceChange] of Object.entries(accountBalanceChanges)) {
         await trx.account.update({
           where: { id: accountId },
@@ -167,9 +182,22 @@ export async function bulkDeleteTransactions(transactionIds) {
             },
           },
         });
+      }
+
+      /* ⭐ BUDGET UPDATE */
+      for (const [accountId, budgetChange] of Object.entries(budgetChanges)) {
+        await trx.budget.update({
+          where: { accountId },
+          data: {
+            amount: {
+              increment: budgetChange,
+            },
+          },
+        });
 
         revalidatePath(`/account/${accountId}`);
       }
+
     });
 
     revalidatePath("/dashboard");
@@ -180,4 +208,57 @@ export async function bulkDeleteTransactions(transactionIds) {
     console.error(error);
     return { success: false, error: error.message };
   }
+}
+
+export async function getAccountBudgetStats(accountId) {
+
+  if (!accountId) {
+    return {
+      budget: 0,
+      monthlySpend: 0,
+      yearlySpend: 0
+    };
+  }
+
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId }
+  });
+
+  const now = new Date();
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+  const monthly = await db.transaction.aggregate({
+    where: {
+      userId: user.id,
+      accountId,
+      type: "EXPENSE",
+      date: { gte: startOfMonth }
+    },
+    _sum: { amount: true }
+  });
+
+  const yearly = await db.transaction.aggregate({
+    where: {
+      userId: user.id,
+      accountId,
+      type: "EXPENSE",
+      date: { gte: startOfYear }
+    },
+    _sum: { amount: true }
+  });
+
+  const budget = await db.budget.findUnique({
+    where: { accountId }
+  });
+
+  return {
+    budget: budget?.amount?.toNumber() || 0,
+    monthlySpend: monthly._sum.amount?.toNumber() || 0,
+    yearlySpend: yearly._sum.amount?.toNumber() || 0,
+  };
 }

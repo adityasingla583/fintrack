@@ -144,7 +144,7 @@
   transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hero-image.loaded {
+.hero-image.scrolled {
   opacity: 1;
   transform: rotateX(15deg) scale(1) translateY(0);
 }

@@ -3,7 +3,6 @@ import {
   Receipt,
   PieChart,
   CreditCard,
-  Globe,
   Zap,
 } from "lucide-react";
 export const featuresData = [
@@ -28,11 +27,6 @@ export const featuresData = [
     icon: <CreditCard className="h-8 w-8 text-blue-600" />,
     title: "Multi-Account Support",
     description: "Manage multiple accounts and credit cards in one place",
-  },
-  {
-    icon: <Globe className="h-8 w-8 text-blue-600" />,
-    title: "Multi-Currency",
-    description: "Support for multiple currencies with real-time conversion",
   },
   {
     icon: <Zap className="h-8 w-8 text-blue-600" />,

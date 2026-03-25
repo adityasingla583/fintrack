@@ -16,7 +16,6 @@ model User {
   imageUrl      String?
   transactions  Transaction[]
   accounts      Account[]
-  budgets       Budget[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -33,7 +32,9 @@ model Account {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
-  deleteAccountOtp DeleteAccountOtp?   // ⭐ ADD THIS
+  budget       Budget?       // ⭐ ADD THIS
+
+  deleteAccountOtp DeleteAccountOtp?
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -68,18 +69,18 @@ model Transaction {
 }
 
 model Budget {
-  id          String       @id @default(uuid())
-  amount      Decimal
-  lastAlertSent DateTime?  // Track when the last alert was sent
-  userId      String       @unique
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String   @id @default(uuid())
+  amount        Decimal
+  lastAlertSent DateTime?
 
-  @@index([userId])
+  accountId     String   @unique
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@map("budgets")
 }
-
 model DeleteAccountOtp {
   id         String   @id @default(uuid())
   accountId  String   @unique
