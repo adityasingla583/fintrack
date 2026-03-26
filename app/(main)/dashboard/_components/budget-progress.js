@@ -17,14 +17,11 @@ export function BudgetProgress({
   yearlySpend
 }) {
 
-  const percentUsed =
-    budget > 0 ? Math.min((monthlySpend / budget) * 100, 100) : 0;
-
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">
-          Monthly Account Budget
+          Monthly Account Budget <p className="inline text-gray-500">(Default Account)</p>
         </CardTitle>
       </CardHeader>
 

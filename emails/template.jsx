@@ -16,7 +16,7 @@ export default function EmailTemplate({
           <Container style={styles.container}>
             <Heading style={styles.title}>Monthly Financial Report</Heading>
 
-            <Text style={styles.text}>Hello {userName},</Text>
+            <Text style={styles.text}>Hello {username},</Text>
             <Text style={styles.text}>
               Here&rsquo;s your financial summary for {data?.month}:
             </Text>
