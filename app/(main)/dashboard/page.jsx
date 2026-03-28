@@ -1,18 +1,14 @@
 import { Suspense } from "react";
 import { getUserAccounts } from "@/actions/dashboard";
 import { getDashboardData } from "@/actions/dashboard";
-// import { AccountCard } from "./_components/account-card";
-// import { CreateAccountDrawer } from "@/components/create-account-drawer";
 import { BudgetProgress } from "./_components/budget-progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { CreateAccountDrawer } from "@/components/create-account-drawer";
 import AccountCard from "./_components/account-card";
 import { getCurrentBudget } from "@/actions/budget";
-import { de } from "date-fns/locale";
 import DashboardOverview from "./_components/transaction-overview";
 import { getAccountBudgetStats } from "@/actions/accounts";
-// import { DashboardOverview } from "./_components/transaction-overview";
 
 export default async function DashboardPage() {
   const [accounts, transaction] = await Promise.all([

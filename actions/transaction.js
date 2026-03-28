@@ -1,7 +1,6 @@
 "use server"
 // import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
-import { request } from "@arcjet/next";
 import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
@@ -220,21 +219,29 @@ export async function getTransaction(id) {
   return serializeAmount(transaction);
 }
 
-export async function updateTransaction(id, data) {
+export async function updateTransaction(data) {
   try {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
+    // ✅ FIX: extract editId correctly
+    const { editId, ...updatedData } = data;
+
+    if (!editId) throw new Error("Transaction ID missing");
+
+    console.log("✏️ Updating transaction:", editId);
+
+    // ✅ Get user
     const user = await db.user.findUnique({
       where: { clerkUserId: userId },
     });
 
     if (!user) throw new Error("User not found");
 
-    // Get original transaction to calculate balance change
-    const originalTransaction = await db.transaction.findUnique({
+    // ✅ FIX: use findFirst (safe with userId)
+    const originalTransaction = await db.transaction.findFirst({
       where: {
-        id,
+        id: editId,
         userId: user.id,
       },
       include: {
@@ -242,87 +249,75 @@ export async function updateTransaction(id, data) {
       },
     });
 
-    if (!originalTransaction) throw new Error("Transaction not found");
+    if (!originalTransaction) {
+      throw new Error("Transaction not found");
+    }
 
-    // Calculate balance changes
-    const oldBalanceChange =
-      originalTransaction.type === "EXPENSE"
-        ? -originalTransaction.amount.toNumber()
-        : originalTransaction.amount.toNumber();
+    const oldAmount = originalTransaction.amount.toNumber();
+    const newAmount = Number(updatedData.amount);
 
-    const newBalanceChange =
-      data.type === "EXPENSE" ? -data.amount : data.amount;
+    const oldType = originalTransaction.type;
+    const newType = updatedData.type;
 
-    const netBalanceChange = newBalanceChange - oldBalanceChange;
+    const accountId = originalTransaction.accountId;
 
-    // Update transaction and account balance in a transaction
-    const transaction = await db.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
+      // 🔄 Reverse old transaction
+      let balanceChange = 0;
 
-      /* ⭐ REVERSE OLD ACCOUNT BALANCE */
+      if (oldType === "EXPENSE") {
+        balanceChange += oldAmount;
+      } else {
+        balanceChange -= oldAmount;
+      }
+
+      // 🔄 Apply new transaction
+      if (newType === "EXPENSE") {
+        balanceChange -= newAmount;
+      } else {
+        balanceChange += newAmount;
+      }
+
+      // ✅ Update account balance
       await tx.account.update({
-        where: { id: originalTransaction.accountId },
+        where: { id: accountId },
         data: {
           balance: {
-            increment: -oldBalanceChange,
+            increment: balanceChange,
           },
         },
       });
 
-      /* ⭐ REVERSE OLD BUDGET EFFECT */
-      await tx.budget.update({
-        where: { accountId: originalTransaction.accountId },
+      // ✅ Update transaction
+      await tx.transaction.update({
+        where: { id: editId },
         data: {
-          amount:
-            originalTransaction.type === "EXPENSE"
-              ? { increment: originalTransaction.amount }
-              : { decrement: originalTransaction.amount }
+          type: newType,
+          amount: newAmount,
+          description: updatedData.description,
+          category: updatedData.category,
+          date: new Date(updatedData.date),
+          isRecurring: updatedData.isRecurring,
+          recurringInterval: updatedData.recurringInterval || null,
         },
       });
-
-      /* ⭐ UPDATE TRANSACTION */
-      const updated = await tx.transaction.update({
-        where: {
-          id,
-          userId: user.id,
-        },
-        data: {
-          ...data,
-          nextRecurringDate:
-            data.isRecurring && data.recurringInterval
-              ? calculateNextRecurringDate(data.date, data.recurringInterval)
-              : null,
-        },
-      });
-
-      /* ⭐ APPLY NEW ACCOUNT BALANCE */
-      await tx.account.update({
-        where: { id: data.accountId },
-        data: {
-          balance: {
-            increment: newBalanceChange,
-          },
-        },
-      });
-
-      /* ⭐ APPLY NEW BUDGET EFFECT */
-      await tx.budget.update({
-        where: { accountId: data.accountId },
-        data: {
-          amount:
-            data.type === "EXPENSE"
-              ? { decrement: data.amount }
-              : { increment: data.amount }
-        },
-      });
-
-      return updated;
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath(`/account/${data.accountId}`);
+    revalidatePath(`/account/${accountId}`);
 
-    return { success: true, data: serializeAmount(transaction) };
+    return {
+      success: true,
+      data: {
+        accountId,
+      },
+    };
+
   } catch (error) {
-    throw new Error(error.message);
+    console.error("❌ Update error:", error);
+
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
