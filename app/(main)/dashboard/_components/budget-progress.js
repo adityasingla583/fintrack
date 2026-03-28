@@ -34,7 +34,7 @@ export function BudgetProgress({
             <ArrowDownRight size={16}/>
             <span>₹ {monthlySpend}</span>
             <span className="text-muted-foreground text-xs">
-              (Spent)
+              (Spent this month)
             </span>
           </div>
 
@@ -47,13 +47,6 @@ export function BudgetProgress({
           </div>
 
         </div>
-
-        {/* Budget */}
-        <div className="text-sm flex justify-between">
-          <span className="text-muted-foreground">Budget</span>
-          <span className="font-semibold">₹ {budget}</span>
-        </div>
-
       </CardContent>
     </Card>
   );
