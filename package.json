@@ -18,6 +18,8 @@
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.19.2",
     "@react-email/components": "^1.0.10",
+    "@react-email/render": "^2.0.4",
+    "@trigger.dev/sdk": "4.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "data-fns": "^1.1.0",
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@react-email/preview-server": "5.2.10",
     "@tailwindcss/postcss": "^4",
+    "@trigger.dev/build": "4.4.3",
     "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",

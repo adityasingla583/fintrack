@@ -4,6 +4,7 @@ import {
   PieChart,
   CreditCard,
   Zap,
+  FileText,
 } from "lucide-react";
 export const featuresData = [
   {
@@ -33,6 +34,11 @@ export const featuresData = [
     title: "Automated Insights",
     description: "Get automated financial insights and recommendations",
   },
+  {
+    icon: <FileText className="h-8 w-8 text-blue-600" />,
+    title: "Monthly Reports",
+    description: "Get detailed monthly financial reports",
+  }
 ];
 
 // How It Works Data
