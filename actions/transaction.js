@@ -1,5 +1,4 @@
 "use server"
-// import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -17,21 +16,6 @@ export async function createTransaction(data) {
     /* ---------------- AUTH ---------------- */
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
-
-    /* ---------------- ARCJET RATE LIMIT ---------------- */
-    // const req = await request();
-
-    // const decision = await aj.protect(req, {
-    //   userId,
-    //   requested: 1,
-    // });
-
-    // if (decision.isDenied()) {
-    //   if (decision.reason.isRateLimit()) {
-    //     throw new Error("Too many requests. Try again later.");
-    //   }
-    //   throw new Error("Request blocked");
-    // }
 
     /* ---------------- GET USER ---------------- */
     const user = await db.user.findUnique({
