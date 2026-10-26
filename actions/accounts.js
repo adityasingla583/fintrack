@@ -184,20 +184,6 @@ export async function bulkDeleteTransactions(transactionIds) {
         });
       }
 
-      /* ⭐ BUDGET UPDATE */
-      for (const [accountId, budgetChange] of Object.entries(budgetChanges)) {
-        await trx.budget.update({
-          where: { accountId },
-          data: {
-            amount: {
-              increment: budgetChange,
-            },
-          },
-        });
-
-        revalidatePath(`/account/${accountId}`);
-      }
-
     });
 
     revalidatePath("/dashboard");

@@ -65,17 +65,6 @@ export async function createTransaction(data) {
         },
       });
 
-      /* ⭐ BUDGET UPDATE */
-      await tx.budget.update({
-        where: { accountId: data.accountId },
-        data: {
-          amount:
-            data.type === "EXPENSE"
-              ? { decrement: data.amount }
-              : { increment: data.amount }
-        },
-      });
-
       return created;
     });
 

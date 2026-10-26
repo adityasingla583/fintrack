@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   RefreshCw,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -52,7 +53,6 @@ import { cn } from "@/lib/utils";
 import { categoryColors } from "@/data/categories";
 import { bulkDeleteTransactions } from "@/actions/accounts";
 import useFetch from "@/hooks/use-fetch";
-import { BarLoader } from "react-spinners";
 import { useRouter } from "next/navigation";
 
 const ITEMS_PER_PAGE = 10;
@@ -80,7 +80,6 @@ export function TransactionTable({ transactions }) {
   const filteredAndSortedTransactions = useMemo(() => {
     let result = [...transactions];
 
-    // Apply search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter((transaction) =>
@@ -88,12 +87,10 @@ export function TransactionTable({ transactions }) {
       );
     }
 
-    // Apply type filter
     if (typeFilter) {
       result = result.filter((transaction) => transaction.type === typeFilter);
     }
 
-    // Apply recurring filter
     if (recurringFilter) {
       result = result.filter((transaction) => {
         if (recurringFilter === "recurring") return transaction.isRecurring;
@@ -101,10 +98,8 @@ export function TransactionTable({ transactions }) {
       });
     }
 
-    // Apply sorting
     result.sort((a, b) => {
       let comparison = 0;
-
       switch (sortConfig.field) {
         case "date":
           comparison = new Date(a.date) - new Date(b.date);
@@ -118,14 +113,12 @@ export function TransactionTable({ transactions }) {
         default:
           comparison = 0;
       }
-
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
 
     return result;
   }, [transactions, searchTerm, typeFilter, recurringFilter, sortConfig]);
 
-  // Pagination calculations
   const totalPages = Math.ceil(
     filteredAndSortedTransactions.length / ITEMS_PER_PAGE
   );
@@ -164,52 +157,61 @@ export function TransactionTable({ transactions }) {
   const {
     loading: deleteLoading,
     fn: deleteFn,
-    data: deleted,
   } = useFetch(bulkDeleteTransactions);
 
- const handleBulkDelete = () => {
-  const id = toast.custom(
-    () => (
-      <div className="w-[380px] bg-white shadow-2xl rounded-2xl p-6 border text-center">
-        <h2 className="text-lg font-semibold mb-2">
-          Delete Transactions?
-        </h2>
+  const executeDelete = async (ids) => {
+    const count = ids.length;
+    // ⭐ Show instant loading toast early
+    const toastId = toast.loading(`Deleting ${count} transaction${count > 1 ? "s" : ""}...`);
 
-        <p className="text-sm text-gray-500 mb-5">
-          You are about to delete {selectedIds.length} transactions
-        </p>
+    const res = await deleteFn(ids);
+    if (res?.success) {
+      toast.success(`Successfully deleted ${count} transaction${count > 1 ? "s" : ""}!`, { id: toastId });
+      setSelectedIds([]);
+      router.refresh();
+    } else {
+      toast.error(res?.error || "Failed to delete transactions", { id: toastId });
+    }
+  };
 
-        <div className="flex gap-3 justify-center">
-          <button
-            className="px-4 py-2 rounded-lg bg-red-500 text-white"
-            onClick={() => {
-              deleteFn(selectedIds);
-              toast.dismiss(id);
-            }}
-          >
-            Delete
-          </button>
+  const handleBulkDelete = () => {
+    const toastCustomId = toast.custom(
+      () => (
+        <div className="w-[360px] bg-card text-card-foreground shadow-2xl rounded-2xl p-6 border border-border/80 text-center space-y-4">
+          <div className="h-10 w-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+            <Trash className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold">
+              Delete Transactions?
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              You are about to delete {selectedIds.length} transaction{selectedIds.length > 1 ? "s" : ""}. This cannot be undone.
+            </p>
+          </div>
 
-          <button
-            className="px-4 py-2 rounded-lg border"
-            onClick={() => toast.dismiss(id)}
-          >
-            Cancel
-          </button>
+          <div className="flex gap-2.5 justify-center pt-1">
+            <button
+              className="flex-1 px-4 py-2 rounded-xl border border-border/70 hover:bg-muted text-xs font-medium cursor-pointer"
+              onClick={() => toast.dismiss(toastCustomId)}
+            >
+              Cancel
+            </button>
+            <button
+              className="flex-1 px-4 py-2 rounded-xl bg-destructive hover:bg-destructive/90 text-white text-xs font-semibold cursor-pointer shadow-sm"
+              onClick={() => {
+                toast.dismiss(toastCustomId);
+                executeDelete(selectedIds);
+              }}
+            >
+              Confirm Delete
+            </button>
+          </div>
         </div>
-      </div>
-    ),
-    {
-      duration: Infinity,
-    }
-  );
-};
-
-  useEffect(() => {
-    if (deleted && !deleteLoading) {
-      toast.error("Transactions deleted successfully");
-    }
-  }, [deleted, deleteLoading]);
+      ),
+      { duration: Infinity }
+    );
+  };
 
   const handleClearFilters = () => {
     setSearchTerm("");
@@ -220,18 +222,23 @@ export function TransactionTable({ transactions }) {
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-    setSelectedIds([]); // Clear selections on page change
+    setSelectedIds([]);
   };
 
   return (
     <div className="space-y-4">
+      {/* Top action indicator bar */}
       {deleteLoading && (
-        <BarLoader className="mt-4" width={"100%"} color="#9333ea" />
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/10 text-primary text-xs font-medium animate-pulse">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Processing transaction deletion...</span>
+        </div>
       )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search transactions..."
             value={searchTerm}
@@ -266,7 +273,7 @@ export function TransactionTable({ transactions }) {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="All Transactions" />
             </SelectTrigger>
             <SelectContent>
@@ -282,9 +289,15 @@ export function TransactionTable({ transactions }) {
                 variant="destructive"
                 size="sm"
                 onClick={handleBulkDelete}
+                disabled={deleteLoading}
+                className="gap-1.5"
               >
-                <Trash className="h-4 w-4 mr-2" />
-                Delete Selected ({selectedIds.length})
+                {deleteLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash className="h-3.5 w-3.5" />
+                )}
+                <span>Delete ({selectedIds.length})</span>
               </Button>
             </div>
           )}
@@ -303,10 +316,10 @@ export function TransactionTable({ transactions }) {
       </div>
 
       {/* Transactions Table */}
-      <div className="rounded-md border">
+      <div className="rounded-xl border border-border/60 overflow-hidden bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               <TableHead className="w-[50px]">
                 <Checkbox
                   checked={
@@ -368,43 +381,45 @@ export function TransactionTable({ transactions }) {
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  className="text-center text-muted-foreground"
+                  className="text-center text-muted-foreground py-10"
                 >
                   No transactions found
                 </TableCell>
               </TableRow>
             ) : (
               paginatedTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
+                <TableRow key={transaction.id} className="hover:bg-muted/40 transition-colors">
                   <TableCell>
                     <Checkbox
                       checked={selectedIds.includes(transaction.id)}
                       onCheckedChange={() => handleSelect(transaction.id)}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-xs">
                     {format(new Date(transaction.date), "PP")}
                   </TableCell>
-                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell className="font-medium text-foreground">
+                    {transaction.description || "Untitled Transaction"}
+                  </TableCell>
                   <TableCell className="capitalize">
                     <span
                       style={{
-                        background: categoryColors[transaction.category],
+                        background: categoryColors[transaction.category] || "#64748b",
                       }}
-                      className="px-2 py-1 rounded text-white text-sm"
+                      className="px-2 py-0.5 rounded-full text-white text-[11px] font-semibold"
                     >
                       {transaction.category}
                     </span>
                   </TableCell>
                   <TableCell
                     className={cn(
-                      "text-right font-medium",
+                      "text-right font-semibold text-sm",
                       transaction.type === "EXPENSE"
-                        ? "text-red-500"
-                        : "text-green-500"
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-emerald-600 dark:text-emerald-400"
                     )}
                   >
-                    {transaction.type === "EXPENSE" ? "-" : "+"}
+                    {transaction.type === "EXPENSE" ? "-" : "+"}₹
                     {transaction.amount.toFixed(2)}
                   </TableCell>
                   <TableCell>
@@ -414,31 +429,22 @@ export function TransactionTable({ transactions }) {
                           <TooltipTrigger>
                             <Badge
                               variant="secondary"
-                              className="gap-1 bg-purple-100 text-purple-700 hover:bg-purple-200"
+                              className="gap-1 bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200"
                             >
                               <RefreshCw className="h-3 w-3" />
-                              {
-                                RECURRING_INTERVALS[
-                                  transaction.recurringInterval
-                                ]
-                              }
+                              {RECURRING_INTERVALS[transaction.recurringInterval]}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <div className="text-sm">
-                              <div className="font-medium">Next Date:</div>
-                              <div>
-                                {format(
-                                  new Date(transaction.nextRecurringDate),
-                                  "PPP"
-                                )}
-                              </div>
+                            <div className="text-xs">
+                              <span className="font-medium">Next Date: </span>
+                              {format(new Date(transaction.nextRecurringDate), "PPP")}
                             </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     ) : (
-                      <Badge variant="outline" className="gap-1">
+                      <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
                         <Clock className="h-3 w-3" />
                         One-time
                       </Badge>
@@ -446,10 +452,8 @@ export function TransactionTable({ transactions }) {
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                      <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 w-8 hover:bg-muted p-0 cursor-pointer text-muted-foreground hover:text-foreground">
+                        <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
@@ -458,13 +462,14 @@ export function TransactionTable({ transactions }) {
                               `/transaction/create?edit=${transaction.id}`
                             )
                           }
+                          className="cursor-pointer"
                         >
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => deleteFn([transaction.id])}
+                          className="text-destructive cursor-pointer"
+                          onClick={() => executeDelete([transaction.id])}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -480,16 +485,17 @@ export function TransactionTable({ transactions }) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 pt-2">
           <Button
             variant="outline"
             size="icon"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
+            className="h-8 w-8"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm">
+          <span className="text-xs text-muted-foreground px-2">
             Page {currentPage} of {totalPages}
           </span>
           <Button
@@ -497,6 +503,7 @@ export function TransactionTable({ transactions }) {
             size="icon"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
+            className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

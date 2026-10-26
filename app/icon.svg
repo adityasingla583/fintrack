@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="finGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="50%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.25" flood-color="#4f46e5"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle rounded background -->
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#finGrad)" filter="url(#shadow)" />
+
+  <!-- Subtle inner border -->
+  <rect x="4.5" y="4.5" width="55" height="55" rx="15.5" stroke="white" stroke-opacity="0.2" stroke-width="1" />
+
+  <!-- Trending dynamic bars / F-glyph -->
+  <path d="M20 44V20H38C40.2 20 42 21.8 42 24C42 26.2 40.2 28 38 28H28V32H35C37.2 32 39 33.8 39 36C39 38.2 37.2 40 35 40H28V44H20Z" fill="white" />
+
+  <!-- Vibrant spark / AI star badge -->
+  <path d="M46 12L47.5 16.5L52 18L47.5 19.5L46 24L44.5 19.5L40 18L44.5 16.5L46 12Z" fill="url(#sparkGrad)" />
+</svg>

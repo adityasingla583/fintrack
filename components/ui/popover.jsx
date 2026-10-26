@@ -12,6 +12,7 @@ function Popover({
 }
 
 function PopoverTrigger({
+  asChild,
   ...props
 }) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;

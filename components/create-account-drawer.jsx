@@ -17,13 +17,6 @@ import {
   DrawerClose,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { createAccount } from "@/actions/dashboard";
 import { accountSchema } from "@/app/lib/schema";
@@ -37,7 +30,7 @@ export function CreateAccountDrawer({ children }) {
     setValue,
     watch,
     reset,
-    control
+    control,
   } = useForm({
     resolver: zodResolver(accountSchema),
     defaultValues: {
@@ -75,7 +68,9 @@ export function CreateAccountDrawer({ children }) {
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{children}</DrawerTrigger>
+      <DrawerTrigger onClick={() => setOpen(true)} className="text-left w-full h-full">
+        {children}
+      </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Create New Account</DrawerTitle>
@@ -112,7 +107,7 @@ export function CreateAccountDrawer({ children }) {
                 render={({ field }) => (
                   <select
                     {...field}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
                   >
                     <option value="CURRENT">Current</option>
                     <option value="SAVINGS">Savings</option>
@@ -163,10 +158,11 @@ export function CreateAccountDrawer({ children }) {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <DrawerClose asChild>
-                <Button type="button" variant="outline" className="flex-1">
-                  Cancel
-                </Button>
+              <DrawerClose
+                type="button"
+                className="flex-1 inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+              >
+                Cancel
               </DrawerClose>
               <Button
                 type="submit"
