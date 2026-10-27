@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { format } from "date-fns";
 
 export async function GET(request) {
   try {
@@ -35,6 +36,18 @@ export async function GET(request) {
       orderBy: { date: "desc" },
     });
 
+    // Helper to format date safely and cleanly for spreadsheets
+    const formatDateForCsv = (dateVal) => {
+      if (!dateVal) return "";
+      try {
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return "";
+        return format(d, "yyyy-MM-dd");
+      } catch (e) {
+        return "";
+      }
+    };
+
     // Generate CSV lines
     const headers = [
       "Transaction ID",
@@ -50,7 +63,7 @@ export async function GET(request) {
 
     const rows = transactions.map((tx) => [
       `"${tx.id}"`,
-      `"${new Date(tx.date).toISOString().split("T")[0]}"`,
+      formatDateForCsv(tx.date),
       `"${(tx.description || "").replace(/"/g, '""')}"`,
       `"${tx.category}"`,
       `"${tx.type}"`,
@@ -60,9 +73,11 @@ export async function GET(request) {
       `"${tx.status}"`,
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    // Prepend UTF-8 BOM (\uFEFF) so Excel and spreadsheet apps reliably open with proper encoding and date detection
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
 
-    const filename = `FinTrack_Transactions_${new Date().toISOString().split("T")[0]}.csv`;
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const filename = `FinTrack_Transactions_${todayStr}.csv`;
 
     return new NextResponse(csvContent, {
       status: 200,
