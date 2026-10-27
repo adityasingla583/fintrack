@@ -33,6 +33,12 @@ const COLORS = [
 ];
 
 const DashboardOverview = ({ accounts, transactions }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Always select the default account first, fallback to accounts[0]
   const getDefaultAccountId = () => {
     if (!accounts?.length) return undefined;
@@ -200,38 +206,40 @@ const DashboardOverview = ({ accounts, transactions }) => {
               </p>
             </div>
           ) : (
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`₹${Number(value).toFixed(2)}`, "Spent"]}
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      borderColor: "var(--border)",
-                      borderRadius: "var(--radius)",
-                      color: "var(--foreground)",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="w-full min-w-0 h-[280px]">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`₹${Number(value).toFixed(2)}`, "Spent"]}
+                      contentStyle={{
+                        backgroundColor: "var(--card)",
+                        borderColor: "var(--border)",
+                        borderRadius: "var(--radius)",
+                        color: "var(--foreground)",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           )}
         </CardContent>

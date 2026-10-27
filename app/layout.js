@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/header";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PostReloadToast } from "@/components/post-reload-toast";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
             <main className="flex-1 pt-16 pb-12">
               {children}
               <Toaster richColors position="top-right" />
+              <PostReloadToast />
             </main>
 
             {/* Sticky/Bottom-Pushed Footer */}

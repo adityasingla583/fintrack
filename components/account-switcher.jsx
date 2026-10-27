@@ -48,8 +48,12 @@ export function AccountSwitcher({ accounts = [] }) {
     try {
       const res = await updateDefaultFn(account.id);
       if (res?.success) {
-        toast.success(`Default account switched to "${account.name}"`, { id: toastId });
-        // Full window reload to guarantee all server components & navbar refresh immediately
+        // Store persistent toast message across reload
+        try {
+          sessionStorage.setItem("fintrack_reload_toast", `"${account.name}" is now your default account!`);
+        } catch (e) {}
+
+        // Reload so all server components, metrics, and navbar refresh immediately
         window.location.reload();
       } else {
         toast.error(res?.error || "Failed to switch default account", { id: toastId });

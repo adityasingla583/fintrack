@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -31,6 +31,11 @@ const DATE_RANGES = {
 
 export function AccountChart({ transactions }) {
   const [dateRange, setDateRange] = useState("1M");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredData = useMemo(() => {
     const range = DATE_RANGES[dateRange];
@@ -76,13 +81,13 @@ export function AccountChart({ transactions }) {
   }, [filteredData]);
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-        <CardTitle className="text-base font-normal">
+        <CardTitle className="text-base font-semibold tracking-tight">
           Transaction Overview
         </CardTitle>
         <Select defaultValue={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[140px] h-9 text-xs">
             <SelectValue placeholder="Select range" />
           </SelectTrigger>
           <SelectContent>
@@ -97,72 +102,77 @@ export function AccountChart({ transactions }) {
       <CardContent>
         <div className="flex justify-around mb-6 text-sm">
           <div className="text-center">
-            <p className="text-muted-foreground">Total Income</p>
-            <p className="text-lg font-bold text-green-500">
-              {totals.income.toFixed(2)}
+            <p className="text-muted-foreground text-xs font-medium">Total Income</p>
+            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+              ₹{totals.income.toFixed(2)}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-muted-foreground">Total Expenses</p>
-            <p className="text-lg font-bold text-red-500">
-              {totals.expense.toFixed(2)}
+            <p className="text-muted-foreground text-xs font-medium">Total Expenses</p>
+            <p className="text-lg font-bold text-rose-600 dark:text-rose-400">
+              ₹{totals.expense.toFixed(2)}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-muted-foreground">Net</p>
+            <p className="text-muted-foreground text-xs font-medium">Net Balance</p>
             <p
               className={`text-lg font-bold ${
                 totals.income - totals.expense >= 0
-                  ? "text-green-500"
-                  : "text-red-500"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400"
               }`}
             >
-              {(totals.income - totals.expense).toFixed(2)}
+              ₹{(totals.income - totals.expense).toFixed(2)}
             </p>
           </div>
         </div>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={filteredData}
-              margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="date"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <Tooltip
-                formatter={(value) => [`${value}`, undefined]}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                }}
-              />
-              <Legend />
-              <Bar
-                dataKey="income"
-                name="Income"
-                fill="#22c55e"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="expense"
-                name="Expense"
-                fill="#ef4444"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+
+        <div className="w-full min-w-0 h-[300px]">
+          {mounted && (
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
+              <BarChart
+                data={filteredData}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                <XAxis
+                  dataKey="date"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <Tooltip
+                  formatter={(value) => [`₹${value}`, undefined]}
+                  contentStyle={{
+                    backgroundColor: "var(--card)",
+                    borderColor: "var(--border)",
+                    borderRadius: "var(--radius)",
+                    color: "var(--foreground)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Legend />
+                <Bar
+                  dataKey="income"
+                  name="Income"
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="expense"
+                  name="Expense"
+                  fill="#f43f5e"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>
