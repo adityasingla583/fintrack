@@ -68,6 +68,7 @@ export async function updateDefaultAccount(accountId) {
     });
 
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
 
     return {
       success: true,
@@ -187,6 +188,7 @@ export async function bulkDeleteTransactions(transactionIds) {
     });
 
     revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
 
     return { success: true };
 

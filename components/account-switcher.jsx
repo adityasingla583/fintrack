@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
@@ -12,23 +12,55 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Check, CreditCard, Building2, Wallet, Loader2 } from "lucide-react";
 import { updateDefaultAccount } from "@/actions/accounts";
-import useFetch from "@/hooks/use-fetch";
 import { toast } from "sonner";
 
 export function AccountSwitcher({ accounts = [] }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const {
-    loading: isUpdating,
-    fn: updateDefaultFn,
-  } = useFetch(updateDefaultAccount);
+  const serverDefault = accounts.find((a) => a.isDefault) || accounts[0];
+  const [optimisticDefaultId, setOptimisticDefaultId] = useState(
+    serverDefault?.id
+  );
+
+  // Keep in sync when server props refresh
+  useEffect(() => {
+    if (serverDefault?.id) {
+      setOptimisticDefaultId(serverDefault.id);
+    }
+  }, [serverDefault?.id]);
+
+  // Synchronize with external changes (e.g., toggled switch from Dashboard card)
+  useEffect(() => {
+    const handleExternalDefaultChange = (e) => {
+      const newDefaultId = e.detail;
+      if (newDefaultId) {
+        setOptimisticDefaultId(newDefaultId);
+      }
+    };
+
+    window.addEventListener(
+      "fintrack:default-account-changed",
+      handleExternalDefaultChange
+    );
+    return () => {
+      window.removeEventListener(
+        "fintrack:default-account-changed",
+        handleExternalDefaultChange
+      );
+    };
+  }, []);
 
   if (!accounts || accounts.length === 0) {
     return null;
   }
 
-  const currentDefault = accounts.find((a) => a.isDefault) || accounts[0];
+  const currentDefault =
+    accounts.find((a) => a.id === optimisticDefaultId) ||
+    serverDefault ||
+    accounts[0];
 
   const handleSelectAccount = async (account) => {
     // If user is inside an /account/[id] view, navigate directly
@@ -37,40 +69,81 @@ export function AccountSwitcher({ accounts = [] }) {
       return;
     }
 
-    if (account.id === currentDefault.id) {
+    if (account.id === optimisticDefaultId) {
       router.push(`/account/${account.id}`);
       return;
     }
 
-    // ⭐ Show instant loading toast immediately
+    const previousId = optimisticDefaultId;
+
+    // 1. Instantly update active default account in UI
+    setOptimisticDefaultId(account.id);
+    setIsUpdating(true);
+
+    // Notify dashboard cards immediately so their switch state toggles in sync
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("fintrack:default-account-changed", {
+          detail: account.id,
+        })
+      );
+    }
+
     const toastId = toast.loading(`Switching default account to "${account.name}"...`);
 
     try {
-      const res = await updateDefaultFn(account.id);
+      const res = await updateDefaultAccount(account.id);
       if (res?.success) {
-        // Store persistent toast message across reload
-        try {
-          sessionStorage.setItem("fintrack_reload_toast", `"${account.name}" is now your default account!`);
-        } catch (e) {}
+        toast.success(`"${account.name}" is now your default account!`, {
+          id: toastId,
+        });
 
-        // Reload so all server components, metrics, and navbar refresh immediately
-        window.location.reload();
+        // Revalidate server components smoothly without reloading the entire page
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
-        toast.error(res?.error || "Failed to switch default account", { id: toastId });
+        // Rollback on failure
+        setOptimisticDefaultId(previousId);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("fintrack:default-account-changed", {
+              detail: previousId,
+            })
+          );
+        }
+        toast.error(res?.error || "Failed to switch default account", {
+          id: toastId,
+        });
       }
     } catch (err) {
-      toast.error(err.message || "Failed to switch default account", { id: toastId });
+      // Rollback on network error
+      setOptimisticDefaultId(previousId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("fintrack:default-account-changed", {
+            detail: previousId,
+          })
+        );
+      }
+      toast.error(err.message || "Failed to switch default account", {
+        id: toastId,
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
+
+  const loading = isUpdating || isPending;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        disabled={isUpdating}
-        className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-border/70 bg-card hover:bg-muted/60 text-xs font-medium text-foreground transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+        disabled={loading}
+        className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-border/70 bg-card hover:bg-muted/60 text-xs font-medium text-foreground transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-70"
         title="Active account / Switch account"
       >
-        {isUpdating ? (
+        {loading ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
         ) : (
           <div className="h-4 w-4 rounded-full bg-primary/10 text-primary flex items-center justify-center">
@@ -116,7 +189,7 @@ export function AccountSwitcher({ accounts = [] }) {
                 <div>
                   <div className="font-medium text-foreground flex items-center gap-1.5">
                     <span>{acc.name}</span>
-                    {acc.isDefault && (
+                    {isSelected && (
                       <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.2 rounded font-semibold">
                         Default
                       </span>

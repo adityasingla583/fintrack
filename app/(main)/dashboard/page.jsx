@@ -1,13 +1,10 @@
 import { Suspense } from "react";
 import { getUserAccounts, getDashboardData } from "@/actions/dashboard";
 import { BudgetProgress } from "./_components/budget-progress";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus } from "lucide-react";
-import { CreateAccountDrawer } from "@/components/create-account-drawer";
-import AccountCard from "./_components/account-card";
 import { getCurrentBudget } from "@/actions/budget";
 import DashboardOverview from "./_components/transaction-overview";
 import { getAccountBudgetStats } from "@/actions/accounts";
+import { AccountsGrid } from "./_components/accounts-grid";
 
 export default async function DashboardPage() {
   const [accounts, defaultTransactions] = await Promise.all([
@@ -58,26 +55,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <CreateAccountDrawer>
-            <Card className="hover:shadow-md transition-all cursor-pointer border-dashed border-2 hover:border-primary/50 group bg-card/50">
-              <CardContent className="flex flex-col items-center justify-center text-muted-foreground h-full py-10 group-hover:text-primary transition-colors">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Plus className="h-6 w-6 text-primary" />
-                </div>
-                <p className="text-sm font-semibold">Add New Account</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Track another bank or card
-                </p>
-              </CardContent>
-            </Card>
-          </CreateAccountDrawer>
-
-          {accounts?.length > 0 &&
-            accounts.map((account) => (
-              <AccountCard key={account.id} account={account} />
-            ))}
-        </div>
+        <AccountsGrid accounts={accounts || []} />
       </div>
     </div>
   );

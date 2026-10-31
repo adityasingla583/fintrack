@@ -50,11 +50,25 @@ const DashboardOverview = ({ accounts, transactions }) => {
 
   // Keep in sync whenever accounts change (e.g. user changes default account)
   useEffect(() => {
-    const defaultId = getDefaultAccountId();
-    if (defaultId && !accounts.some((a) => a.id === selectedAccountId)) {
-      setSelectedAccountId(defaultId);
+    const defaultAcc = accounts?.find((acc) => acc.isDefault);
+    if (defaultAcc) {
+      setSelectedAccountId(defaultAcc.id);
     }
   }, [accounts]);
+
+  // Also listen for instant default account changes
+  useEffect(() => {
+    const handleExternalDefaultChange = (e) => {
+      const newDefaultId = e.detail;
+      if (newDefaultId) {
+        setSelectedAccountId(newDefaultId);
+      }
+    };
+    window.addEventListener("fintrack:default-account-changed", handleExternalDefaultChange);
+    return () => {
+      window.removeEventListener("fintrack:default-account-changed", handleExternalDefaultChange);
+    };
+  }, []);
 
   const accountTransactions = transactions.filter(
     (t) => t.accountId === selectedAccountId
