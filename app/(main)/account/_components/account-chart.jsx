@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import {
   BarChart,
   Bar,
@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const emptySubscribe = () => () => {};
+
 const DATE_RANGES = {
   "7D": { label: "Last 7 Days", days: 7 },
   "1M": { label: "Last Month", days: 30 },
@@ -31,11 +33,7 @@ const DATE_RANGES = {
 
 export function AccountChart({ transactions }) {
   const [dateRange, setDateRange] = useState("1M");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const filteredData = useMemo(() => {
     const range = DATE_RANGES[dateRange];

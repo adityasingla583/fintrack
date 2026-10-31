@@ -87,7 +87,7 @@ export async function createTransaction(data) {
 // Scan Receipt
 export async function scanReceipt(file) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
@@ -130,12 +130,17 @@ export async function scanReceipt(file) {
 
     try {
       const data = JSON.parse(cleanedText);
+      const parsedDate =
+        data.date && !isNaN(new Date(data.date).getTime())
+          ? new Date(data.date)
+          : new Date();
+
       return {
-        amount: parseFloat(data.amount),
-        date: new Date(data.date),
-        description: data.description,
-        category: data.category,
-        merchantName: data.merchantName,
+        amount: parseFloat(data.amount) || 0,
+        date: parsedDate,
+        description: data.description || "",
+        category: data.category || "",
+        merchantName: data.merchantName || "",
       };
     } catch (parseError) {
       console.error("Error parsing JSON response:", parseError);

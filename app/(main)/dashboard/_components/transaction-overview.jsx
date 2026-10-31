@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ArrowDownRight, ArrowUpRight, Inbox, PieChart as PieIcon } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import {
   Cell,
   Legend,
@@ -20,6 +20,8 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+
+const emptySubscribe = () => () => {};
 
 const COLORS = [
   "#3b82f6", // blue
@@ -33,11 +35,7 @@ const COLORS = [
 ];
 
 const DashboardOverview = ({ accounts, transactions }) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   // Always select the default account first, fallback to accounts[0]
   const getDefaultAccountId = () => {
@@ -47,14 +45,16 @@ const DashboardOverview = ({ accounts, transactions }) => {
   };
 
   const [selectedAccountId, setSelectedAccountId] = useState(getDefaultAccountId);
+  const [prevAccounts, setPrevAccounts] = useState(accounts);
 
-  // Keep in sync whenever accounts change (e.g. user changes default account)
-  useEffect(() => {
+  // Sync when accounts prop updates from server revalidation
+  if (accounts !== prevAccounts) {
+    setPrevAccounts(accounts);
     const defaultAcc = accounts?.find((acc) => acc.isDefault);
-    if (defaultAcc) {
+    if (defaultAcc && defaultAcc.id !== selectedAccountId) {
       setSelectedAccountId(defaultAcc.id);
     }
-  }, [accounts]);
+  }
 
   // Also listen for instant default account changes
   useEffect(() => {

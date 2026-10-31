@@ -270,7 +270,7 @@ export function BudgetProgress({
           <div className="flex items-center justify-between p-3 rounded-lg border border-dashed text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span>No monthly budget set for this account yet. Click "Set Budget" to get insights and alerts.</span>
+              <span>No monthly budget set for this account yet. Click &quot;Set Budget&quot; to get insights and alerts.</span>
             </div>
           </div>
         )}
